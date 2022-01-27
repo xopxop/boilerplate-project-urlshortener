@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const { URL, parse } = require('url');
+const dns = require('dns');
 
 const Schema = mongoose.Schema;
 const app = express();
@@ -20,20 +20,6 @@ const shortUrlSchema = new Schema({
     required: true
   }
 });
-
-const stringIsAValidUrl = (s, protocols) => {
-  try {
-    new URL(s);
-    const parsed = parse(s);
-    return protocols
-        ? parsed.protocol
-        ? protocols.map(x => `${x.toLowerCase()}:`).includes(parsed.protocol)
-          : false
-          : true;
-  } catch (err) {
-      return false;
-  }
-};
 
 const ShortUrl = mongoose.model('ShortUrl', shortUrlSchema);
 
@@ -56,30 +42,37 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
+
 app.post('/api/shorturl', (req, res) => {
   const originalUrl = req.body['url'];
-  const urlObj = new URL(originalUrl);
 
-  dns.lookup(urlObj.origin, (err, address, family) => {
-    if (err) {
-      res.send({error: "invalid url"});
-    } else {
-      ShortUrl.findOne({original_url: originalUrl}, {_id: 0, __v:0}, (error, result) => {
-        if (result) {
-          res.send(result);
-        } else {
-          ShortUrl.count((error, result)=> {
-            const record = {
-              original_url: originalUrl,
-              short_url: result + 1
-            };
-            ShortUrl(record).save();
-            res.send(record);
-          });
-        }
-      });
-    }
-  });
+  try {
+    const urlObj = new URL(originalUrl);
+    dns.lookup(urlObj.hostname, (err, address, family) => {
+      console.log(err);
+      if (err) {
+        res.send({error: "invalid url"});
+      } else {
+        ShortUrl.findOne({original_url: originalUrl}, {_id: 0, __v:0}, (error, result) => {
+          if (result) {
+            res.send(result);
+          } else {
+            ShortUrl.count((error, result)=> {
+              const record = {
+                original_url: originalUrl,
+                short_url: result + 1
+              };
+              ShortUrl(record).save();
+              res.send(record);
+            });
+          }
+        });
+      }
+    });
+  } catch (e) {
+    res.send({error: "invalid url"});
+  }
+
 });
 
 
