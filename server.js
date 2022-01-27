@@ -58,25 +58,28 @@ app.get('/api/hello', function(req, res) {
 
 app.post('/api/shorturl', (req, res) => {
   const originalUrl = req.body['url'];
+  const urlObj = new URL(originalUrl);
 
-  if (!stringIsAValidUrl(originalUrl, ['http', 'https', 'fpt'])) {
-    res.send({error: "invalid url"});
-  } else {
-    ShortUrl.findOne({original_url: originalUrl}, {_id: 0, __v:0}, (error, result) => {
-      if (result) {
-        res.send(result);
-      } else {
-        ShortUrl.count((error, result)=> {
-          const record = {
-            original_url: originalUrl,
-            short_url: result + 1
-          };
-          ShortUrl(record).save();
-          res.send(record);
-        });
-      }
-    });
-  }
+  dns.lookup(urlObj.origin, (err, address, family) => {
+    if (err) {
+      res.send({error: "invalid url"});
+    } else {
+      ShortUrl.findOne({original_url: originalUrl}, {_id: 0, __v:0}, (error, result) => {
+        if (result) {
+          res.send(result);
+        } else {
+          ShortUrl.count((error, result)=> {
+            const record = {
+              original_url: originalUrl,
+              short_url: result + 1
+            };
+            ShortUrl(record).save();
+            res.send(record);
+          });
+        }
+      });
+    }
+  });
 });
 
 
