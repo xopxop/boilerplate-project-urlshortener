@@ -48,7 +48,7 @@ app.post('/api/shorturl', (req, res) => {
 
   try {
     const urlObj = new URL(originalUrl);
-    dns.lookup(urlObj.href, (err, address, family) => {
+    dns.lookup(urlObj.origin, (err, address, family) => {
       if (err) {
         res.send({error: "invalid url"});
       } else {
