@@ -52,7 +52,6 @@ app.post('/api/shorturl', (req, res) => {
       throw new Error('not correct protocol call');
     }
     dns.lookup(urlObj.hostname, (err, address, family) => {
-      console.log(address);
       if (err) {
         res.send({error: "invalid url"});
       } else {
